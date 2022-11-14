@@ -13,14 +13,14 @@ public interface ProjectService {
     ResponseEntity<List<Object>> listAll();
 
     @PostMapping("/api/project")
-    ResponseEntity<Object> create();
+    ResponseEntity<Object> create(@RequestBody Object dto);
 
     @GetMapping("/api/project/{id}")
-    ResponseEntity<Object> findById();
+    ResponseEntity<Object> findById(@PathVariable("id") String id);
 
     @PutMapping("/api/project/{id}")
-    ResponseEntity<Object> update();
+    ResponseEntity<Object> update(@PathVariable("id") String id);
 
     @DeleteMapping("/api/project/{id}")
-    ResponseEntity<Object> delete();
+    ResponseEntity<Object> delete(@PathVariable("id") String id);
 }
