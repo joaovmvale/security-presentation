@@ -1,8 +1,12 @@
 package com.securityDevelopment.equipment.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.securityDevelopment.user.model.UserModel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.annotations.Type;
 
 import javax.persistence.*;
@@ -34,6 +38,9 @@ public class EquipmentModel {
 
     @Column(name = "storage", nullable = false)
     private String storage;
+
+    @Column(name = "user_id")
+    private UUID userId;
 
     public EquipmentModel(UUID serial, String model, String memory, String processor, String storage) {
         this.serial = serial;

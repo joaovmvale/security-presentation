@@ -3,6 +3,8 @@ package com.securityDevelopment.equipment.controller;
 import com.securityDevelopment.equipment.model.EquipmentModel;
 import com.securityDevelopment.equipment.model.dto.EquipmentDTO;
 import com.securityDevelopment.equipment.model.dto.EquipmentResponseDTO;
+import com.securityDevelopment.equipment.model.dto.EquipmentUserDTO;
+import com.securityDevelopment.equipment.model.dto.EquipmentUserResponseDTO;
 import com.securityDevelopment.equipment.service.EquipmentService;
 import com.securityDevelopment.utils.exception.CustomException;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
@@ -10,6 +12,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,13 +25,14 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/equipment")
 public class EquipmentController {
+    private final AmqpTemplate queueSender;
     EquipmentService equipmentService;
+
     @Autowired
     public EquipmentController(EquipmentService equipmentService, AmqpTemplate queueSender) {
         this.equipmentService = equipmentService;
         this.queueSender = queueSender;
     }
-    private final AmqpTemplate queueSender;
 
     @PostMapping
     public ResponseEntity<EquipmentResponseDTO> create(@RequestBody EquipmentDTO dto) throws CustomException {
@@ -39,9 +43,9 @@ public class EquipmentController {
     }
 
     @GetMapping
-    public ResponseEntity<List<EquipmentResponseDTO>> listAll() {
+    public ResponseEntity<List<EquipmentUserResponseDTO>> listAll() {
         List<EquipmentModel> equipment = equipmentService.listAll();
-        List<EquipmentResponseDTO> response = equipment.stream().map(EquipmentResponseDTO::transformToEquipmentResponseDTO).collect(Collectors.toList());
+        List<EquipmentUserResponseDTO> response = equipment.stream().map(EquipmentUserResponseDTO::transformToEquipmentResponseDTO).collect(Collectors.toList());
         queueSender.convertAndSend("securityDev-exchange", "securityDev-routing-key", "List equipments");
         return ResponseEntity.ok(response);
     }
@@ -55,16 +59,18 @@ public class EquipmentController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<EquipmentResponseDTO> update(@PathVariable UUID id, @RequestBody EquipmentDTO dto) throws CustomException {
+    public ResponseEntity<EquipmentUserResponseDTO> update(@PathVariable UUID id, @RequestBody EquipmentUserDTO dto) throws CustomException {
         EquipmentModel equipment = equipmentService.getById(id);
+
         equipment.setSerial(dto.getSerial());
         equipment.setModel(dto.getModel());
         equipment.setMemory(dto.getMemory());
         equipment.setProcessor(dto.getProcessor());
         equipment.setStorage(dto.getStorage());
+        equipment.setUserId(dto.getUserId());
 
         equipmentService.create(equipment);
-        EquipmentResponseDTO response = EquipmentResponseDTO.transformToEquipmentResponseDTO(equipment);
+        EquipmentUserResponseDTO response = EquipmentUserResponseDTO.transformToEquipmentResponseDTO(equipment);
         queueSender.convertAndSend("securityDev-exchange", "securityDev-routing-key", "Edit equipments");
         return ResponseEntity.ok(response);
     }
@@ -74,6 +80,13 @@ public class EquipmentController {
         equipmentService.deleteById(id);
         queueSender.convertAndSend("securityDev-exchange", "securityDev-routing-key", "Delete equipments");
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/user/{userId}/equipments")
+    public ResponseEntity<List<EquipmentModel>> getAllCommentsByTutorialId(@PathVariable(value = "userId") UUID userId) {
+        List<EquipmentModel> equipments = equipmentService.findByUserId(userId);
+
+        return new ResponseEntity<>(equipments, HttpStatus.OK);
     }
 
 }

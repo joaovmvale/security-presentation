@@ -37,6 +37,8 @@ public class EquipmentService {
         equipmentRepository.deleteById(id);
     }
 
+    public List<EquipmentModel> findByUserId(UUID userId) {
+        return equipmentRepository.findByUserId(userId);
+    }
+
 }
-
-
